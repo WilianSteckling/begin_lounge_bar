@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Begin Lounge Bar</title>
+    
+    <!-- Firebase SDKs - -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+</head>
+<body>
+
+<script>
+    // ⚠️ SUBSTITUA OS VALORES ABAIXO PELAS SUAS CREDENCIAIS DO FIREBASE!
+    const firebaseConfig = {
+        apiKey: "AIzaSyAPCeeNcmv-oRKcT0oKhACKgyKlRu6CU1s",
+        authDomain: "begin-lounge-bar.firebaseapp.com",
+        projectId: "begin-lounge-bar",
+        storageBucket: "begin-lounge-bar.firebasestorage.app",
+        messagingSenderId: "656643920099",
+        appId: "1:656643920099:web:3397938fe992bab7fa35d6",
+        measurementId: "G-MSWP4HK26H"
+    };
+
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Listener de Estado de Autenticação
+    auth.onAuthStateChanged(user => {
+        const authSection = document.getElementById('auth-section');
+        const eventSection = document.getElementById('event-section');
+        const userDisplay = document.getElementById('user-display');
+        
+        if (user) {
+            authSection.classList.add('hidden');
+            eventSection.classList.remove('hidden');
+            userDisplay.textContent = user.email;
+        } else {
+            authSection.classList.remove('hidden');
+            eventSection.classList.add('hidden');
+            userDisplay.textContent = '';
+        }
+    });
+
+    // Função de Login
+    function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const authMessage = document.getElementById('auth-message');
+        authMessage.textContent = '';
+
+        auth.signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Sucesso
+            })
+            .catch((error) => {
+                authMessage.textContent = `Erro de Login: ${error.message}`;
+                console.error("Erro de Login:", error);
+            });
+    }
+    
+    // Função de Logout
+    function logout() {
+        auth.signOut();
+    }
+
+    // Função de Criação de Evento (CRUD - Create)
+    // MUDANÇA: Renomeada de createEvent() para createNewEvent() para evitar conflito 
+    // com o método nativo document.createEvent(). O nome anterior poderia causar
+    // ambiguidade e erros de execução.
+    function createNewEvent() {
+        const name = document.getElementById('event-name').value;
+        const date = document.getElementById('event-date').value;
+        const description = document.getElementById('event-description').value;
+        const saveMessage = document.getElementById('save-message');
+        saveMessage.textContent = '';
+
+        if (!name || !date || !description) {
+            saveMessage.textContent = "Por favor, preencha todos os campos.";
+            saveMessage.style.color = "red";
+            return;
+        }
+
+        // Adiciona o novo evento na coleção 'events'
+        db.collection('events').add({
+            name: name,
+            date: date,
+            description: description,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        })
+        .then(() => {
+            saveMessage.textContent = "✅ Evento criado com sucesso no Firestore!";
+            saveMessage.style.color = "green";
+            
+            // Limpar formulário após sucesso
+            document.getElementById('event-name').value = '';
+            document.getElementById('event-date').value = '';
+            document.getElementById('event-description').value = '';
+            
+            // MUDANÇA: Disparar evento customizado usando sintaxe moderna
+            // Substitui o antigo document.createEvent() por new CustomEvent()
+            const eventCreatedEvent = new CustomEvent('eventCreated', {
+                detail: { name, date, description },
+                bubbles: true,
+                cancelable: true
+            });
+            
+            // Dispara o evento no botão que foi clicado
+            document.querySelector('button[onclick*="createNewEvent"]').dispatchEvent(eventCreatedEvent);
+        })
+        .catch((error) => {
+            saveMessage.textContent = `❌ Erro ao salvar evento: ${error.message}`;
+            saveMessage.style.color = "red";
+            console.error("Erro ao salvar evento:", error);
+        });
+    }
+</script>
+
+<!-- Interface do Usuário -->
+<div class="container">
+    <h1>Admin Portal - Begin Lounge Bar</h1>
+    
+    <!-- Seção de Autenticação -->
+    <div id="auth-section">
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Senha" required>
+        <button onclick="login()">Entrar</button>
+        <div id="auth-message"></div>
+    </div>
+    
+    <!-- Seção de Eventos (aparece após login) -->
+    <div id="event-section" class="hidden">
+        <div class="user-info">
+            Usuário logado: <span id="user-display"></span>
+            <button onclick="logout()">Sair</button>
+        </div>
+        
+        <h2>Criar Novo Evento</h2>
+        <input type="text" id="event-name" placeholder="Nome do Evento" required>
+        <input type="date" id="event-date" required>
+        <textarea id="event-description" placeholder="Descrição do Evento" required></textarea>
+        <button onclick="createNewEvent()">Criar Evento</button>
+        <div id="save-message"></div>
+    </div>
+</div>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+    
+    .container {
+        background-color: #2a2a2a;
+        padding: 30px;
+        border-radius: 10px;
+    }
+    
+    h1, h2 {
+        text-align: center;
+        color: #ff6b35;
+    }
+    
+    input, textarea, button {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #444;
+        border-radius: 5px;
+        background-color: #333;
+        color: #fff;
+        box-sizing: border-box;
+    }
+    
+    button {
+        background-color: #ff6b35;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    button:hover {
+        background-color: #e55a2b;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .user-info {
+        background-color: #333;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    #auth-message, #save-message {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+    }
+</style>
+
+</body>
+</html>

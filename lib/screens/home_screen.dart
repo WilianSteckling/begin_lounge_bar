@@ -66,7 +66,7 @@ class HomeScreen extends StatelessWidget {
                       // Simulação da Logomarca (requer imagem em assets/images/begin_logo.png)
                       Image.asset( 
                         'assets/images/begin_logo.png', // Aponte para sua imagem
-                        height: 40, 
+                        height: 70, 
                       ),
                       // Ícones de Perfil (Mock, para simplificar a remoção dos avatares de letras)
                       const Row(
